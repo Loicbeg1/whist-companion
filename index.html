@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Whist Companion</title>
+  <style>
+    :root{
+      --bg:#F7F8FB; --panel:#FFFFFF; --border:#E4E7EE;
+      --text:#1F2937; --muted:#6B7280;
+      --accent:#3B82F6; --accent2:#60A5FA;
+      --btn:#EEF2FF; --btnHover:#E0E7FF; --selected:#DCEBFF; --disabled:#E5E7EB;
+      --shadow:0 10px 25px rgba(17,24,39,0.08);
+      --radius:14px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:var(--font); background:var(--bg); color:var(--text);}
+    .wrap{max-width:1250px; margin:0 auto; padding:14px;}
+    .topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px;}
+    .brand{font-weight:800; font-size:18px;}
+    .actions{display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end}
+    .btn{
+      appearance:none; border:0; border-radius:12px; padding:10px 12px;
+      background:var(--btn); color:var(--text); cursor:pointer; font-weight:600;
+      transition:transform .03s ease, background .15s ease;
+    }
+    .btn:hover{background:var(--btnHover)}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{background:var(--accent); color:#fff;}
+    .btn.primary:hover{background:var(--accent2)}
+    .btn.selected{background:var(--selected)}
+    .btn:disabled{background:var(--disabled); cursor:not-allowed; opacity:0.85}
+    .headerRow{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding:0 12px 10px 12px;
+    }
+    .titleBlock{display:flex; flex-direction:column; gap:6px}
+    .titleLine{display:flex; gap:12px; align-items:baseline; flex-wrap:wrap}
+    .h1{font-size:20px; font-weight:800}
+    .meta{color:var(--muted); font-size:13px}
+    .infoRight{color:var(--muted); font-size:13px; font-weight:600}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr 1.95fr;
+      gap:12px;
+      padding:12px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+    }
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:12px 14px;
+      background:linear-gradient(180deg, rgba(59,130,246,0.06), rgba(255,255,255,0));
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .cardTitle{font-weight:800; color:var(--muted); letter-spacing:.2px}
+    .cardBody{padding:12px 14px}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    .playersRow .btn{min-width:150px}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border:1px solid var(--border); border-radius:999px;
+      background:#fff;
+      color:var(--muted); font-size:13px; font-weight:700;
+    }
+    .twoCols{
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    }
+    @media (max-width: 980px){
+      .twoCols{grid-template-columns:1fr}
+    }
+    .list{display:flex; flex-direction:column; gap:8px}
+    .list .btn{width:100%; text-align:left; padding:11px 12px}
+    .issuesScroll{
+      max-height:330px; overflow:auto; padding-right:4px;
+    }
+    .scoresBox{
+      display:flex; flex-direction:column; gap:6px;
+      font-weight:700;
+    }
+    .scoreLine{display:flex; justify-content:space-between; gap:10px}
+    .scoreName{color:var(--text)}
+    .scoreVal{color:var(--accent); font-variant-numeric:tabular-nums}
+    .tableWrap{overflow:auto; max-height:420px;}
+    table{width:100%; border-collapse:separate; border-spacing:0}
+    thead th{
+      position:sticky; top:0; background:var(--bg); z-index:2;
+      color:var(--muted); font-size:12px; letter-spacing:.2px;
+      text-align:left; padding:10px 10px; border-bottom:1px solid var(--border);
+    }
+    tbody td{
+      padding:10px 10px; border-bottom:1px solid var(--border); font-size:13px;
+      font-variant-numeric:tabular-nums;
+    }
+    tbody tr:nth-child(even){background:#F9FAFB}
+    .right{ text-align:right }
+    .center{ text-align:center }
+    .toast{
+      margin:10px 12px 0 12px;
+      color:var(--accent); font-weight:700; font-size:13px; min-height:18px;
+    }
+
+    /* Modal */
+    .modalOverlay{
+      position:fixed; inset:0; background:rgba(17,24,39,0.45);
+      display:none; align-items:center; justify-content:center; padding:16px;
+      z-index:50;
+    }
+    .modalOverlay.show{display:flex}
+    .modal{
+      width:min(720px, 100%); background:var(--panel); border-radius:18px;
+      border:1px solid var(--border); box-shadow:var(--shadow); overflow:hidden;
+    }
+    .modalHead{padding:12px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center}
+    .modalTitle{font-weight:900}
+    .modalBody{padding:12px 14px}
+    .modalFoot{padding:12px 14px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end}
+    .radioList{display:flex; flex-direction:column; gap:8px; padding:8px 0}
+    .radioRow{display:flex; gap:10px; align-items:center; padding:10px; border:1px solid var(--border); border-radius:12px; cursor:pointer}
+    .radioRow:hover{background:#F9FAFB}
+    .mono{font-variant-numeric:tabular-nums}
+    .small{font-size:13px; color:var(--muted)}
+    .muted{color:var(--muted)}
+    .hr{height:1px; background:var(--border); margin:10px 0}
+    .fieldRow{display:flex; gap:10px; flex-wrap:wrap}
+    .field{display:flex; flex-direction:column; gap:6px}
+    input[type="text"]{
+      padding:10px 10px; border:1px solid var(--border); border-radius:12px; outline:none;
+      font-weight:600;
+    }
+    select{
+      padding:10px 10px; border:1px solid var(--border); border-radius:12px; outline:none;
+      font-weight:700;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">Whist Companion</div>
+      <div class="actions">
+        <button class="btn primary" id="btnReset">Recommencer une partie</button>
+        <button class="btn" id="btnUndo">Annuler</button>
+        <button class="btn" id="btnRedo">Refaire</button>
+        <button class="btn" id="btnPoints">Table des points</button>
+        <button class="btn" id="btnPrior">Priorité des annonces</button>
+        <button class="btn" id="btnRules">Règles du jeu</button>
+        <button class="btn" id="btnPlayers">Gérer joueurs</button>
+      </div>
+    </div>
+
+    <div class="headerRow">
+      <div class="titleBlock">
+        <div class="titleLine">
+          <div class="h1">Manche : <span id="uiRound" class="mono">1</span></div>
+          <div class="pill">Dealer : <span id="uiDealerName"></span></div>
+          <div class="pill" id="uiDeadPill">Morts : <span id="uiDead"></span></div>
+        </div>
+        <div class="meta">Astuce : sélectionne 1 ou 2 joueurs, puis un contrat, puis une issue.</div>
+      </div>
+      <div class="infoRight" id="uiSelection">Joueurs sélectionnés : aucun</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="cardHead">
+          <div class="cardTitle">Joueurs</div>
+          <div class="small muted">morts désactivés</div>
+        </div>
+        <div class="cardBody">
+          <div class="row playersRow" id="uiPlayers"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHead">
+          <div class="cardTitle">Contrats & Issues</div>
+          <div class="small muted">contrats à gauche, issues à droite</div>
+        </div>
+        <div class="cardBody">
+          <div class="twoCols">
+            <div>
+              <div class="small muted" style="margin:2px 0 10px 0;">Contrats possibles</div>
+              <div class="list" id="uiContracts"></div>
+            </div>
+            <div>
+              <div class="small muted" style="margin:2px 0 10px 0;">Issues</div>
+              <div class="issuesScroll">
+                <div class="list" id="uiIssues"></div>
+              </div>
+            </div>
+          </div>
+          <div class="toast" id="uiToast"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHead">
+          <div class="cardTitle">Scores cumulés</div>
+          <div class="small muted">total</div>
+        </div>
+        <div class="cardBody">
+          <div class="scoresBox" id="uiScores"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHead">
+          <div class="cardTitle">Historique des manches</div>
+          <div class="small muted">deltas + cumul</div>
+        </div>
+        <div class="cardBody">
+          <div class="tableWrap">
+            <table id="uiTable">
+              <thead>
+                <tr id="uiTableHead"></tr>
+              </thead>
+              <tbody id="uiTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modalOverlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <div class="modalHead">
+        <div class="modalTitle" id="modalTitle">Modal</div>
+        <button class="btn" id="modalClose">Fermer</button>
+      </div>
+      <div class="modalBody" id="modalBody"></div>
+      <div class="modalFoot" id="modalFoot"></div>
+    </div>
+  </div>
+
+<script>
+/* ===========================
+   1) TABLE DES CONTRATS (mêmes libellés que votre Python)
+   =========================== */
+const ANNONCES = {
+  "Emballage": {
+    "Juste": [5, 5, -5, -5],
+    "+1 pli": [7, 7, -7, -7],
+    "+2 plis": [9, 9, -9, -9],
+    "+3 plis": [11, 11, -11, -11],
+    "+4 plis": [13, 13, -13, -13],
+    "+5 plis": [20, 20, -20, -20],
+    "-1 pli": [-7, -7, 7, 7],
+    "-2 plis": [-9, -9, 9, 9],
+    "-3 plis": [-11, -11, 11, 11],
+    "-4 plis": [-13, -13, 13, 13],
+    "-5 plis": [-15, -15, 15, 15],
+    "-6 plis": [-17, -17, 17, 17],
+  },
+  "Solo": {
+    "Juste": [15, -5, -5, -5],
+    "+1 pli": [21, -7, -7, -7],
+    "+2 plis": [27, -9, -9, -9],
+    "-1 pli": [-21, 7, 7, 7],
+    "-2 plis": [-27, 9, 9, 9],
+    "-3 plis": [-33, 11, 11, 11],
+    "Solo 8 s/petite misère": [27, -9, -9, -9],
+    "Solo 8 s/petite misère raté": [-27, 9, 9, 9],
+  },
+  "Petite misère": {
+    "Réussi": [18, -6, -6, -6],
+    "Raté": [-18, 6, 6, 6],
+    "2 mis./2 gag.": [9, 9, -9, -9],
+    "2 mis./1 gag.": [15, -21, 3, 3],
+  },
+  "Piccolo": {
+    "Réussi": [21, -7, -7, -7],
+    "Raté": [-21, 7, 7, 7],
+    "2 pic./2 gag.": [10, 10, -10, -10],
+    "2 pic./1 gag.": [16, -20, 2, 2],
+  },
+  "Piccolissimo": {
+    "Réussi": [24, -8, -8, -8],
+    "Raté": [-24, 8, 8, 8],
+    "2 pic./2 gag.": [12, 12, -12, -12],
+    "2 pic./1 gag.": [18, -24, 3, 3],
+  },
+  "Trou": {
+    "Juste": [10, 10, -10, -10],
+    "+1 pli": [14, 14, -14, -14],
+    "+2 plis": [18, 18, -18, -18],
+    "+3 plis": [22, 22, -22, -22],
+    "+4 plis": [26, 26, -26, -26],
+    "+5 plis": [30, 30, -30, -30],
+    "-1 pli": [-14, -14, 14, 14],
+    "-2 plis": [-18, -18, 18, 18],
+    "-3 plis": [-22, -22, 22, 22],
+    "-4 plis": [-26, -26, 26, 26],
+    "-5 plis": [-30, -30, 30, 30],
+  },
+  "Abondance": {
+    "Réussie": [30, -10, -10, -10],
+    "Ratée": [-30, 10, 10, 10],
+  },
+  "Grande misère": {
+    "Réussie": [36, -12, -12, -12],
+    "Ratée": [-36, 12, 12, 12],
+    "Sur trou – réussie": [42, -14, -14, -14],
+    "Sur trou – ratée": [-42, 14, 14, 14],
+    "Sur table – réussie": [48, -16, -16, -16],
+    "Sur table – ratée": [-48, 16, 16, 16],
+    "Sur trou/table – réussie": [54, -18, -18, -18],
+    "Sur trou/table – ratée": [-54, 18, 18, 18],
+  },
+  "Solo chelem": {
+    "Réussi": [60, -20, -20, -20],
+    "Raté": [-60, 20, 20, 20],
+  },
+};
+
+const PRIORITES_TEXT = `
+Classement de la plus faible à la plus forte proposition :
+• Emballage.
+• Solo.
+• Petite Misère.
+• Piccolo.
+• Piccolissimo.
+• Solo huit plis sur Petite Misère.
+• Abondance.
+• Trou.
+• Trou royal.
+• Grande Misère.
+• Grande Misère sur table.
+• Solo-Chelem.
+
+Ordre des couleurs :
+Cœur ♥
+Carreau ♦
+Trèfle ♣
+Pique ♠
+
+Note :
+Trou ou Trou Royal doit toujours être joué en priorité, même s'il y a une Grande Misère ou Grande Misère sur table.
+(Et dans votre variante, Grande misère sur trou passe aussi au-dessus.)
+`.trim();
+
+const RULES_TEXT = `
+• 52 cartes, sans jokers. 13 cartes par joueur. Pas de chien.
+• Le joueur après le dealer commence les annonces et entame le 1er pli.
+• Fournir à la couleur obligatoire. Pas d'obligation de couper / surcouper.
+• Emballage : 2v2.
+• Solo / Abondance / Chelem : 1v3.
+• Petite misère / Piccolo / Piccolissimo :
+  - à 1 joueur : 1v3
+  - à 2 joueurs : 1 vs 1 vs 2 (deux solos concurrents)
+• Objectifs (rappel) :
+  - Petite misère : 0 pli (+ écart d’1 carte chacun en début)
+  - Piccolo : 1 pli exact
+  - Piccolissimo : 2 plis exacts
+  - Abondance : 9 plis minimum (seul)
+  - Trou : 8 plis si départ dans la couleur de l’As, sinon 9 (plis en + = +points)
+  - Grande misère : 0 pli, variantes sur table / sur trou / mix
+`.trim();
+
+/* ===========================
+   2) ÉTAT + PERSISTENCE
+   =========================== */
+const LS_KEY = "whist_companion_current_v1";
+
+function defaultState(){
+  return {
+    joueurs: ["Joueur 1","Joueur 2","Joueur 3","Joueur 4"],
+    scores: [0,0,0,0],
+    dealerIndex: 0,
+    manche: 1,
+    selection: [],          // ids
+    currentContrat: null,   // string
+    history: [],            // entries
+    undoStack: [],          // snapshots
+    redoStack: [],          // snapshots
+    lastToast: ""
+  };
+}
+
+let state = loadState() ?? defaultState();
+
+function saveState(){
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){
+    console.warn("LocalStorage corrupt", e);
+    return null;
+  }
+}
+
+/* ===========================
+   3) RÈGLES (morts / contrats autorisés / issues)
+   =========================== */
+function computeDeadIds(N, dealerIndex){
+  if(N === 5) return [dealerIndex];
+  if(N === 6) return [dealerIndex, (dealerIndex + 3) % 6];
+  return [];
+}
+function activeIds(N, deadIds){
+  const ids = [];
+  for(let i=0;i<N;i++) if(!deadIds.includes(i)) ids.push(i);
+  return ids;
+}
+
+function allowedContracts(selCount){
+  if(selCount === 1){
+    return ["Solo","Abondance","Petite misère","Piccolissimo","Piccolo","Grande misère","Solo chelem"];
+  }
+  if(selCount === 2){
+    return ["Emballage","Petite misère","Piccolissimo","Piccolo","Trou"];
+  }
+  return [];
+}
+
+function allowedIssues(contrat, selCount){
+  const issues = Object.keys(ANNONCES[contrat] || {});
+  if(["Petite misère","Piccolissimo","Piccolo"].includes(contrat) && selCount === 1){
+    return issues.filter(x => !x.includes("2 "));
+  }
+  return issues;
+}
+
+function needsWinner(issue){
+  return issue.includes("/1 gag.");
+}
+
+/* ===========================
+   4) UI HELPERS
+   =========================== */
+const $ = (id)=>document.getElementById(id);
+
+function toast(msg){
+  state.lastToast = msg || "";
+  $("uiToast").textContent = state.lastToast;
+}
+
+function showModal(title, bodyNode, footerButtons){
+  $("modalTitle").textContent = title;
+  const body = $("modalBody");
+  const foot = $("modalFoot");
+  body.innerHTML = "";
+  foot.innerHTML = "";
+  body.appendChild(bodyNode);
+  for(const btn of footerButtons){
+    foot.appendChild(btn);
+  }
+  $("modalOverlay").classList.add("show");
+}
+
+function closeModal(){
+  $("modalOverlay").classList.remove("show");
+}
+
+$("modalClose").addEventListener("click", closeModal);
+$("modalOverlay").addEventListener("click", (e)=>{
+  if(e.target === $("modalOverlay")) closeModal();
+});
+
+/* ===========================
+   5) RENDER
+   =========================== */
+function render(){
+  const N = state.joueurs.length;
+  const dead = computeDeadIds(N, state.dealerIndex);
+  const actives = activeIds(N, dead);
+
+  // Header
+  $("uiRound").textContent = state.manche;
+  $("uiDealerName").textContent = state.joueurs[state.dealerIndex] || "?";
+  $("uiDead").textContent = dead.length ? dead.map(i=>state.joueurs[i]).join(", ") : "aucun";
+  $("uiDeadPill").style.opacity = 1;
+
+  // Selection label
+  const selNames = state.selection.map(i=>state.joueurs[i]);
+  $("uiSelection").textContent = `Joueurs sélectionnés : ${selNames.length ? selNames.join(", ") : "aucun"}`;
+
+  // Players buttons
+  const players = $("uiPlayers");
+  players.innerHTML = "";
+  for(let i=0;i<N;i++){
+    const b = document.createElement("button");
+    b.className = "btn";
+    const isDead = dead.includes(i);
+    const isSel = state.selection.includes(i);
+
+    b.textContent = isDead ? `${state.joueurs[i]} (mort)` : state.joueurs[i];
+    if(isSel) b.classList.add("selected");
+    b.disabled = isDead;
+
+    b.addEventListener("click", ()=>togglePlayer(i));
+    players.appendChild(b);
+  }
+
+  // Scores
+  const scoresBox = $("uiScores");
+  scoresBox.innerHTML = "";
+  for(let i=0;i<N;i++){
+    const line = document.createElement("div");
+    line.className = "scoreLine";
+    line.innerHTML = `<span class="scoreName">${state.joueurs[i]}</span><span class="scoreVal mono">${state.scores[i]}</span>`;
+    scoresBox.appendChild(line);
+  }
+
+  // Contracts
+  const contractsBox = $("uiContracts");
+  contractsBox.innerHTML = "";
+  const allowC = allowedContracts(state.selection.length);
+  if(!allowC.includes(state.currentContrat)) state.currentContrat = null;
+
+  for(const c of allowC){
+    const b = document.createElement("button");
+    b.className = "btn";
+    b.textContent = c;
+    if(state.currentContrat === c) b.classList.add("selected");
+    b.addEventListener("click", ()=>{
+      state.currentContrat = c;
+      saveState();
+      render(); // refresh highlight + issues
+    });
+    contractsBox.appendChild(b);
+  }
+
+  // Issues
+  const issuesBox = $("uiIssues");
+  issuesBox.innerHTML = "";
+  if(state.currentContrat){
+    const issues = allowedIssues(state.currentContrat, state.selection.length);
+    for(const issue of issues){
+      const b = document.createElement("button");
+      b.className = "btn";
+      b.textContent = issue;
+      b.addEventListener("click", ()=>onIssueClick(state.currentContrat, issue));
+      issuesBox.appendChild(b);
+    }
+  } else {
+    const empty = document.createElement("div");
+    empty.className = "small muted";
+    empty.textContent = "Choisis un contrat pour afficher les issues.";
+    issuesBox.appendChild(empty);
+  }
+
+  // History table head dynamic (players columns + cumul)
+  const head = $("uiTableHead");
+  head.innerHTML = "";
+  const cols = ["#", "Dealer", "Morts", "Contrat", "Issue", ...state.joueurs, "Cumul"];
+  for(const c of cols){
+    const th = document.createElement("th");
+    th.textContent = c;
+    th.className = (c === "#" ? "center" : (state.joueurs.includes(c) || c==="Cumul" ? "right" : ""));
+    head.appendChild(th);
+  }
+
+  // History rows
+  const body = $("uiTableBody");
+  body.innerHTML = "";
+  let cumul = Array(N).fill(0);
+
+  for(const entry of state.history){
+    // entry: {manche, dealerSnap, deadSnap, contrat, issue, deltas, cumulAfter}
+    const tr = document.createElement("tr");
+    cumul = entry.cumulAfter.slice();
+
+    const dealerName = state.joueurs[entry.dealerSnap] || "?";
+    const mortsNames = (entry.deadSnap || []).map(i=>state.joueurs[i] || "?").join(", ");
+
+    const baseCells = [
+      {v: entry.manche, cls:"center mono"},
+      {v: dealerName, cls:""},
+      {v: mortsNames, cls:""},
+      {v: entry.contrat, cls:""},
+      {v: entry.issue, cls:""},
+    ];
+
+    for(const cell of baseCells){
+      const td = document.createElement("td");
+      td.textContent = cell.v;
+      td.className = cell.cls;
+      tr.appendChild(td);
+    }
+
+    for(let i=0;i<N;i++){
+      const td = document.createElement("td");
+      const d = entry.deltas[i] || 0;
+      td.textContent = (d>=0?`+${d}`:`${d}`);
+      td.className = "right mono";
+      tr.appendChild(td);
+    }
+
+    const tdC = document.createElement("td");
+    tdC.textContent = cumul.join(" / ");
+    tdC.className = "right mono";
+    tr.appendChild(tdC);
+
+    body.appendChild(tr);
+  }
+
+  // Buttons enabled
+  $("btnUndo").disabled = state.undoStack.length === 0;
+  $("btnRedo").disabled = state.redoStack.length === 0;
+
+  // Toast
+  $("uiToast").textContent = state.lastToast || "";
+}
+
+/* ===========================
+   6) ACTIONS (sélection / appliquer / undo / redo / reset)
+   =========================== */
+function togglePlayer(id){
+  const N = state.joueurs.length;
+  const dead = computeDeadIds(N, state.dealerIndex);
+  if(dead.includes(id)) return;
+
+  const idx = state.selection.indexOf(id);
+  if(idx >= 0){
+    state.selection.splice(idx,1);
+  }else{
+    if(state.selection.length >= 2) return;
+    state.selection.push(id);
+  }
+  // reset contrat si plus cohérent
+  const allowC = allowedContracts(state.selection.length);
+  if(!allowC.includes(state.currentContrat)) state.currentContrat = null;
+
+  toast("");
+  saveState();
+  render();
+}
+
+function snapshot(){
+  // deep copy
+  return JSON.parse(JSON.stringify(state));
+}
+
+function pushUndo(){
+  state.undoStack.push(snapshot());
+  // limiter pile (option)
+  if(state.undoStack.length > 200) state.undoStack.shift();
+}
+
+function onIssueClick(contrat, issue){
+  if(state.selection.length === 0){
+    toast("Sélectionne 1 ou 2 joueurs.");
+    render();
+    return;
+  }
+
+  if(needsWinner(issue) && state.selection.length === 2){
+    openWinnerModal(contrat, issue);
+  }else{
+    applyMove(contrat, issue, null);
+  }
+}
+
+function openWinnerModal(contrat, issue){
+  const body = document.createElement("div");
+  body.innerHTML = `<div class="small muted">Sélectionne le joueur gagnant</div>`;
+  const list = document.createElement("div");
+  list.className = "radioList";
+
+  let chosen = state.selection[0];
+
+  for(const pid of state.selection){
+    const row = document.createElement("div");
+    row.className = "radioRow";
+    row.innerHTML = `<input type="radio" name="w" ${pid===chosen?"checked":""}/> <div><div style="font-weight:800">${state.joueurs[pid]}</div><div class="small muted">Gagnant</div></div>`;
+    row.addEventListener("click", ()=>{
+      chosen = pid;
+      // refresh radios
+      [...list.querySelectorAll("input[type=radio]")].forEach((r,i)=> r.checked = (state.selection[i]===chosen));
+    });
+    list.appendChild(row);
+  }
+
+  body.appendChild(list);
+
+  const cancel = document.createElement("button");
+  cancel.className = "btn";
+  cancel.textContent = "Annuler";
+  cancel.onclick = ()=>closeModal();
+
+  const ok = document.createElement("button");
+  ok.className = "btn primary";
+  ok.textContent = "Confirmer";
+  ok.onclick = ()=>{
+    closeModal();
+    applyMove(contrat, issue, chosen);
+  };
+
+  showModal("Qui a gagné ?", body, [cancel, ok]);
+}
+
+function applyMove(contrat, issue, winnerId){
+  const N = state.joueurs.length;
+
+  // valid selection
+  if(state.selection.length < 1 || state.selection.length > 2) return;
+
+  pushUndo();
+  state.redoStack = []; // clear redo on new action
+
+  const pts4 = (ANNONCES[contrat]?.[issue] || []).slice();
+  if(pts4.length !== 4){
+    toast("Erreur : points introuvables.");
+    state.undoStack.pop();
+    render();
+    return;
+  }
+
+  // swap if needed for "1 gag"
+  if(needsWinner(issue) && state.selection.length === 2){
+    if(winnerId == null){
+      toast("Erreur : gagnant manquant.");
+      state.undoStack.pop();
+      render();
+      return;
+    }
+    // pts4[0] correspond au joueur selection[0]
+    // si winner = selection[1], on swap
+    if(winnerId === state.selection[1]){
+      const tmp = pts4[0]; pts4[0] = pts4[1]; pts4[1] = tmp;
+    }
+  }
+
+  // morts/actifs
+  const deadSnap = computeDeadIds(N, state.dealerIndex);
+  const actives = activeIds(N, deadSnap);
+
+  // distribution = sélection + autres actifs (non sélectionnés), doit faire 4
+  const others = actives.filter(pid => !state.selection.includes(pid));
+  const distribution = state.selection.concat(others).slice(0,4);
+
+  if(distribution.length !== 4){
+    toast(`Erreur : distribution invalide (${distribution.length} actifs).`);
+    state.undoStack.pop();
+    render();
+    return;
+  }
+
+  // deltas pour N joueurs
+  const deltas = Array(N).fill(0);
+  for(let k=0;k<4;k++){
+    deltas[distribution[k]] += pts4[k];
+  }
+
+  // appliquer scores
+  for(let i=0;i<N;i++){
+    state.scores[i] += deltas[i];
+  }
+
+  // cumul after
+  const cumulAfter = state.scores.slice();
+
+  // history entry
+  const entry = {
+    manche: state.manche,
+    dealerSnap: state.dealerIndex,
+    deadSnap: deadSnap.slice(),
+    contrat, issue,
+    distribution: distribution.slice(),
+    pts4: pts4.slice(),
+    deltas: deltas.slice(),
+    cumulAfter
+  };
+  state.history.push(entry);
+
+  state.lastToast = `${contrat} – ${issue}`;
+
+  // next round + dealer rotates ALWAYS (>=4)
+  state.manche += 1;
+  state.dealerIndex = (state.dealerIndex + 1) % N;
+
+  // reset selection + keep contract? (python reset selection)
+  state.selection = [];
+  state.currentContrat = null;
+
+  saveState();
+  render();
+}
+
+function undo(){
+  if(state.undoStack.length === 0) return;
+  const curr = snapshot();
+  const prev = state.undoStack.pop();
+  state.redoStack.push(curr);
+  state = prev;
+  toast("Annulé.");
+  saveState();
+  render();
+}
+
+function redo(){
+  if(state.redoStack.length === 0) return;
+  const curr = snapshot();
+  const next = state.redoStack.pop();
+  state.undoStack.push(curr);
+  state = next;
+  toast("Refait.");
+  saveState();
+  render();
+}
+
+function resetGame(){
+  const ok = confirm("Recommencer une partie ? (scores et historique remis à zéro)");
+  if(!ok) return;
+  const keepNames = state.joueurs.slice();
+  state = defaultState();
+  state.joueurs = keepNames;
+  state.scores = Array(keepNames.length).fill(0);
+  state.dealerIndex = 0;
+  toast("Nouvelle partie.");
+  saveState();
+  render();
+}
+
+/* ===========================
+   7) POPUPS : Table des points / Priorités / Règles
+   =========================== */
+function openTextModal(title, text){
+  const body = document.createElement("div");
+  body.innerHTML = `<div class="small muted" style="white-space:pre-wrap; line-height:1.45">${escapeHtml(text)}</div>`;
+
+  const close = document.createElement("button");
+  close.className = "btn primary";
+  close.textContent = "OK";
+  close.onclick = closeModal;
+
+  showModal(title, body, [close]);
+}
+function escapeHtml(str){
+  return str
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
+}
+
+function openPointsTable(){
+  const body = document.createElement("div");
+  body.innerHTML = `
+    <div class="small muted">Points affichés dans l’ordre : sélectionnés puis adversaires</div>
+    <div class="hr"></div>
+  `;
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "tableWrap";
+  tableWrap.style.maxHeight = "420px";
+
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  thead.innerHTML = `<tr>
+    <th>Contrat / issue</th>
+    <th class="center">Joueur 1</th>
+    <th class="center">Joueur 2</th>
+    <th class="center">Joueur 3</th>
+    <th class="center">Joueur 4</th>
+  </tr>`;
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  let first = true;
+  for(const [contrat, issues] of Object.entries(ANNONCES)){
+    if(!first){
+      const gap = document.createElement("tr");
+      gap.innerHTML = `<td colspan="5" style="background:var(--bg); border-bottom:0; height:10px"></td>`;
+      tbody.appendChild(gap);
+    }
+    first = false;
+
+    const trC = document.createElement("tr");
+    trC.innerHTML = `<td style="font-weight:900; background:rgba(59,130,246,0.10)">${contrat}</td>
+                     <td style="background:rgba(59,130,246,0.10)"></td>
+                     <td style="background:rgba(59,130,246,0.10)"></td>
+                     <td style="background:rgba(59,130,246,0.10)"></td>
+                     <td style="background:rgba(59,130,246,0.10)"></td>`;
+    tbody.appendChild(trC);
+
+    for(const [issue, pts] of Object.entries(issues)){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="padding-left:22px">• ${issue}</td>
+        <td class="center mono">${fmt(pts[0])}</td>
+        <td class="center mono">${fmt(pts[1])}</td>
+        <td class="center mono">${fmt(pts[2])}</td>
+        <td class="center mono">${fmt(pts[3])}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  body.appendChild(tableWrap);
+
+  const close = document.createElement("button");
+  close.className = "btn primary";
+  close.textContent = "Fermer";
+  close.onclick = closeModal;
+
+  showModal("Table des points", body, [close]);
+}
+function fmt(n){ return (n>=0?`+${n}`:`${n}`); }
+
+/* ===========================
+   8) GÉRER JOUEURS (4-6) + dealer initial
+   =========================== */
+function openManagePlayers(){
+  const body = document.createElement("div");
+
+  const line = document.createElement("div");
+  line.className = "fieldRow";
+
+  const fieldN = document.createElement("div");
+  fieldN.className = "field";
+  fieldN.innerHTML = `<div class="small muted">Nombre de joueurs</div>`;
+  const selN = document.createElement("select");
+  [4,5,6].forEach(v=>{
+    const o = document.createElement("option");
+    o.value = String(v);
+    o.textContent = String(v);
+    if(v === state.joueurs.length) o.selected = true;
+    selN.appendChild(o);
+  });
+  fieldN.appendChild(selN);
+
+  const fieldDealer = document.createElement("div");
+  fieldDealer.className = "field";
+  fieldDealer.innerHTML = `<div class="small muted">Dealer initial</div>`;
+  const selD = document.createElement("select");
+  function refreshDealerSelect(names){
+    selD.innerHTML = "";
+    names.forEach((n,i)=>{
+      const o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = n;
+      selD.appendChild(o);
+    });
+    selD.value = String(Math.min(state.dealerIndex, names.length-1));
+  }
+
+  line.appendChild(fieldN);
+  line.appendChild(fieldDealer);
+  body.appendChild(line);
+
+  const hr = document.createElement("div");
+  hr.className = "hr";
+  body.appendChild(hr);
+
+  const namesBox = document.createElement("div");
+  namesBox.className = "field";
+  namesBox.innerHTML = `<div class="small muted">Prénoms</div>`;
+  body.appendChild(namesBox);
+
+  let tempNames = state.joueurs.slice();
+  function renderNameInputs(){
+    namesBox.querySelectorAll("input").forEach(x=>x.remove());
+    // clear and rebuild
+    namesBox.innerHTML = `<div class="small muted">Prénoms</div>`;
+    const N = parseInt(selN.value,10);
+    while(tempNames.length < N) tempNames.push(`Joueur ${tempNames.length+1}`);
+    while(tempNames.length > N) tempNames.pop();
+
+    for(let i=0;i<N;i++){
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.value = tempNames[i];
+      inp.placeholder = `Joueur ${i+1}`;
+      inp.addEventListener("input", ()=>{
+        tempNames[i] = inp.value;
+        refreshDealerSelect(tempNames);
+      });
+      namesBox.appendChild(inp);
+    }
+    refreshDealerSelect(tempNames);
+  }
+
+  selN.addEventListener("change", ()=>renderNameInputs());
+
+  // info morts
+  const info = document.createElement("div");
+  info.className = "small muted";
+  info.style.marginTop = "10px";
+  function refreshInfo(){
+    const N = parseInt(selN.value,10);
+    if(N===4) info.textContent = "N=4 : aucun mort (dealer tourne quand même)";
+    if(N===5) info.textContent = "N=5 : mort = dealer";
+    if(N===6) info.textContent = "N=6 : morts = dealer et dealer+3";
+  }
+  selN.addEventListener("change", refreshInfo);
+
+  fieldDealer.appendChild(selD);
+  body.appendChild(info);
+
+  renderNameInputs();
+  refreshInfo();
+
+  const cancel = document.createElement("button");
+  cancel.className = "btn";
+  cancel.textContent = "Annuler";
+  cancel.onclick = closeModal;
+
+  const ok = document.createElement("button");
+  ok.className = "btn primary";
+  ok.textContent = "Enregistrer";
+  ok.onclick = ()=>{
+    // if game in progress and N changes -> confirm reset (simple)
+    const newN = parseInt(selN.value,10);
+    const oldN = state.joueurs.length;
+    const newDealer = parseInt(selD.value,10);
+
+    const cleanedNames = tempNames.map((x,i)=> (x.trim() ? x.trim() : `Joueur ${i+1}`));
+
+    if(state.history.length && newN !== oldN){
+      const agree = confirm("Changer le nombre de joueurs réinitialise la partie. Continuer ?");
+      if(!agree) return;
+      // reset but keep names
+      state = defaultState();
+      state.joueurs = cleanedNames;
+      state.scores = Array(newN).fill(0);
+      state.dealerIndex = Math.max(0, Math.min(newDealer, newN-1));
+      toast("Partie réinitialisée (nombre de joueurs modifié).");
+      saveState();
+      closeModal();
+      render();
+      return;
+    }
+
+    // same N, just update names + dealer
+    state.joueurs = cleanedNames;
+    // adjust scores arrays if needed
+    state.scores = (state.scores || []).slice(0,newN);
+    while(state.scores.length < newN) state.scores.push(0);
+    state.dealerIndex = Math.max(0, Math.min(newDealer, newN-1));
+
+    // remove dead from selection
+    const dead = computeDeadIds(newN, state.dealerIndex);
+    state.selection = state.selection.filter(pid => !dead.includes(pid));
+
+    toast("Joueurs mis à jour.");
+    saveState();
+    closeModal();
+    render();
+  };
+
+  showModal("Gérer joueurs", body, [cancel, ok]);
+}
+
+/* ===========================
+   9) BIND BUTTONS
+   =========================== */
+$("btnReset").addEventListener("click", resetGame);
+$("btnUndo").addEventListener("click", undo);
+$("btnRedo").addEventListener("click", redo);
+$("btnPoints").addEventListener("click", openPointsTable);
+$("btnPrior").addEventListener("click", ()=>openTextModal("Priorité des annonces", PRIORITES_TEXT));
+$("btnRules").addEventListener("click", ()=>openTextModal("Règles du jeu", RULES_TEXT));
+$("btnPlayers").addEventListener("click", openManagePlayers);
+
+/* ===========================
+   10) INIT
+   =========================== */
+render();
+saveState(); // ensure key exists
+</script>
+</body>
+</html>
+
